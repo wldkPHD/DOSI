@@ -1,0 +1,26 @@
+---
+title: "SCAP Processing"
+author: "William L. D. Krenzer, Ph.D."
+date: "2022-11-21"
+output: html_document
+---
+
+```{r message=FALSE, warning=FALSE}
+### These are to set the working directory and libraries needed for analysis.###
+#setwd("/Users/Wlk3/Desktop/SCAP_Workspace")
+library("dplyr")
+
+### Read the raw CSV file that is placed in the Working Directory.###
+### The date for the file that is being read needs to be changed every time this is run.###
+scap_raw <- read.csv("SoN SCAP self-attest RQMP Year 4_November 21, 2022_13.29.csv")
+
+### Deleting the first two rows of the data set because they are Qualtrics random exports.###
+scap_edited <- scap_raw[-c(1,2),]
+
+### Clean what columns are included from the raw data. Only keeping those needed to locate individuals and recording date.###
+scap_cleaned <- scap_edited[,c("Duration..in.seconds.","RecordedDate","Unit","Affiliation","First.Name","Last.Name",
+                               "Unique.ID","SCAPLink")]
+scap_cleaned <- scap_cleaned[,c(5,6,7,4,3,2,8,1)]
+colnames(scap_cleaned) <- c('First Name','Last Name','Unique ID','NetID','Unit','Date','SCAP Link','Time in Seconds')
+rownames(scap_cleaned) <- NULL
+```
