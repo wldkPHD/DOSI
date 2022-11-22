@@ -1,0 +1,126 @@
+---
+title: "Tracker Checker"
+author: "William L. D. Krenzer, Ph.D."
+date: '2022-06-16'
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+```{r message=FALSE, warning=FALSE}
+#install.packages("writexl")
+#install.packages("dplyr")
+#install.packages("tibble")
+#install.packages("readr")
+#install.packages("DT")
+#install.packages("tidyverse")
+library("writexl")
+library("dplyr")
+library("tibble")
+library("readr")
+library("DT")
+library("tidyverse")
+library("readxl")
+
+scritracker_raw <- read_excel ("Researcher Training Tracker (1).xlsx", col_types = c("guess","text","text","text","text","text","text","text","date","date","text","text","text" ))
+names(scritracker_raw) <- scritracker_raw[1,]
+scritracker_edited <- scritracker_raw[-1,]
+
+scritracker_DF <- as.data.frame(scritracker_edited)
+colnames(scritracker_DF) [9] <- "Next Course Due"
+colnames(scritracker_DF) [10] <- "Date Created"
+
+scritracker_DF$`Next Course Due` <- as.Date(scritracker_DF$`Next Course Due`)
+scritracker_DF$`Date Created` <- as.Date(scritracker_DF$`Date Created`)
+
+scritracker_DF$"SCRI Training Status" <- case_when(scritracker_DF$`Next Course Due`>= Sys.Date()+130 ~ "Compliant",
+                                             scritracker_DF$`Next Course Due` <= Sys.Date()+129 & 
+                                               scritracker_DF$`Next Course Due` >= Sys.Date()+91 ~ "Due in > 90 days",
+                                             scritracker_DF$`Next Course Due` <= Sys.Date()+90 & 
+                                               scritracker_DF$`Next Course Due` >= Sys.Date()+31 ~ "Due in < 90 days",
+                                             scritracker_DF$`Next Course Due` <= Sys.Date()+30 & 
+                                               scritracker_DF$`Next Course Due` >= Sys.Date()+8 ~ "Due in 8-30 days",
+                                             scritracker_DF$`Next Course Due` <= Sys.Date()+7 & 
+                                               scritracker_DF$`Next Course Due` >= Sys.Date() ~ "Due in 0-7 days",
+                                             scritracker_DF$`Next Course Due` >= Sys.Date()-14 & 
+                                               scritracker_DF$`Next Course Due` <= Sys.Date()-1 ~ "Overdue by 1-14 days",
+                                             scritracker_DF$`Next Course Due` >= Sys.Date()-29 & 
+                                               scritracker_DF$`Next Course Due` <= Sys.Date()-15 ~ "Overdue by 15-29 days",
+                                             scritracker_DF$`Next Course Due` <= Sys.Date()-30 ~ "Overdue by ≥ 30 days",
+                                             )
+
+scritracker_DF$"BFRLabel" <- case_when(
+  scritracker_DF$`BFR Code` >= 6860102000 & scritracker_DF$`BFR Code` <= 6860102100 ~ "Biochemistry",
+  scritracker_DF$`BFR Code` >= 6860205000 & scritracker_DF$`BFR Code` <= 6860205100 ~ "Anesthesiology",
+  scritracker_DF$`BFR Code` >= 6860107000 & scritracker_DF$`BFR Code` <= 6860107100 ~ "Biostatistics & Bioinformatics",
+  scritracker_DF$`BFR Code` >= 6860508000 & scritracker_DF$`BFR Code` <= 6860508100 ~ "Brain Imaging and Analysis Center",
+  scritracker_DF$`BFR Code` >= 6860101000 & scritracker_DF$`BFR Code` <= 6860101100 ~ "Cell Biology",
+  scritracker_DF$`BFR Code` >= 6860505500 & scritracker_DF$`BFR Code` <= 6860505599 ~ "Marcus Center for Cellular Cures",
+  scritracker_DF$`BFR Code` >= 6860501000 & scritracker_DF$`BFR Code` <= 6860501099 ~ "Center for Study of Aging",
+  scritracker_DF$`BFR Code` >= 6860501100 & scritracker_DF$`BFR Code` <= 6860501199 ~ "Clinical & Translational Science Institute",
+  scritracker_DF$`BFR Code` >= 6860201300 & scritracker_DF$`BFR Code` <= 6860201399 ~ "Dermatology",
+  scritracker_DF$`BFR Code` >= 6860503000 & scritracker_DF$`BFR Code` <= 6860503100 ~ "Duke Cancer Institute",
+  scritracker_DF$`BFR Code` >= 6860505000 & scritracker_DF$`BFR Code` <= 6860505100 ~ "Duke Clinical Research Institute",
+  scritracker_DF$`BFR Code` >= 6860010621 & scritracker_DF$`BFR Code` <= 6860010625 ~ "Duke Early Phase Clinical Research Unit",
+  scritracker_DF$`BFR Code` >= 6860508500 & scritracker_DF$`BFR Code` <= 6860508599 ~ "Duke Global Health Institute",
+  scritracker_DF$`BFR Code` >= 6860509500 & scritracker_DF$`BFR Code` <= 6860509599 ~ "Duke Human Vaccine Institute",
+  scritracker_DF$`BFR Code` >= 6860506500 & scritracker_DF$`BFR Code` <= 6860506599 ~ "Duke Molecular Physiology Institute",
+  scritracker_DF$`BFR Code` >= 6860201000 & scritracker_DF$`BFR Code` <= 6860201100 ~ "Family Medicine & Community Health",
+  scritracker_DF$`BFR Code` >= 6860504000 & scritracker_DF$`BFR Code` <= 6860504099 ~ "Heart Center",
+  scritracker_DF$`BFR Code` >= 6860102500 & scritracker_DF$`BFR Code` <= 6860102599 ~ "Immunology",
+  scritracker_DF$`BFR Code` >= 6860201500 & scritracker_DF$`BFR Code` <= 6860201599 ~ "Medicine",
+  scritracker_DF$`BFR Code` >= 6860105000 & scritracker_DF$`BFR Code` <= 6860105099 ~ "Molecular Genetics and Microbiology",
+  scritracker_DF$`BFR Code` >= 6860103500 & scritracker_DF$`BFR Code` <= 6860103599 ~ "Neurobiology",
+  scritracker_DF$`BFR Code` >= 6860206500 & scritracker_DF$`BFR Code` <= 6860206599 ~ "Neurology",
+  scritracker_DF$`BFR Code` >= 6860207700 & scritracker_DF$`BFR Code` <= 6860207799 ~ "Neurosurgery",
+  scritracker_DF$`BFR Code` >= 6860205500 & scritracker_DF$`BFR Code` <= 6860205599 ~ "Obstetrics & Gynecology",
+  scritracker_DF$`BFR Code` >= 6860206000 & scritracker_DF$`BFR Code` <= 6860206099 ~ "Ophthalmology",
+  scritracker_DF$`BFR Code` >= 6860207500 & scritracker_DF$`BFR Code` <= 6860207599 ~ "Orthopaedics",
+  scritracker_DF$`BFR Code` >= 6860204500 & scritracker_DF$`BFR Code` <= 6860204599 ~ "Pathology",
+  scritracker_DF$`BFR Code` >= 6860104500 & scritracker_DF$`BFR Code` <= 6860104599 ~ "Pharmacology & Cancer Biology",
+  scritracker_DF$`BFR Code` >= 6860202500 & scritracker_DF$`BFR Code` <= 6860202599 ~ "Pediatrics",
+  scritracker_DF$`BFR Code` >= 6860106500 & scritracker_DF$`BFR Code` <= 6860106599 ~ "Population Health Sciences",
+  scritracker_DF$`BFR Code` >= 6860203000 & scritracker_DF$`BFR Code` <= 6860203099 ~ "Psychiatry",
+  scritracker_DF$`BFR Code` >= 6860204000 & scritracker_DF$`BFR Code` <= 6860204099 ~ "Radiation Oncology",
+  scritracker_DF$`BFR Code` >= 6860203500 & scritracker_DF$`BFR Code` <= 6860203599 ~ "Radiology",
+  scritracker_DF$`BFR Code` >= 6840103000 & scritracker_DF$`BFR Code` <= 6840103100 ~ "School of Nursing",
+  scritracker_DF$`BFR Code` >= 6860207010 & scritracker_DF$`BFR Code` <= 6860207099 ~ "Section of Surgical Disciplines",
+  scritracker_DF$`BFR Code` >= 6860207900 & scritracker_DF$`BFR Code` <= 6860207999 ~ "Head and Neck Surgery & Communication Sciences",
+  scritracker_DF$`BFR Code` >= 6860010100 & scritracker_DF$`BFR Code` <= 6860010620 ~ "SoM - No RQT Assigned",
+  scritracker_DF$`BFR Code` >= 6860051000 & scritracker_DF$`BFR Code` <= 6860051010 ~ "SoM - No RQT Assigned",
+  scritracker_DF$`BFR Code` >= 6860501500 & scritracker_DF$`BFR Code` <= 6860501510 ~ "SoM - No RQT Assigned",
+  scritracker_DF$`BFR Code` >= 6860509600 & scritracker_DF$`BFR Code` <= 6860509610 ~ "SoM - No RQT Assigned",
+  scritracker_DF$`BFR Code` >= 6860600000 & scritracker_DF$`BFR Code` <= 6860602000 ~ "SoM - No RQT Assigned",
+  scritracker_DF$`BFR Code` >= 6860701000 & scritracker_DF$`BFR Code` <= 6860701010 ~ "SoM - No RQT Assigned",
+  scritracker_DF$`BFR Code` >= 6860010650 & scritracker_DF$`BFR Code` <= 6860010655 ~ "SoM - No RQT Assigned",
+  scritracker_DF$`BFR Code` >= 301060001 & scritracker_DF$`BFR Code` <= 301060001 ~ "Anesthesiology",
+  scritracker_DF$`BFR Code` >= 301060003 & scritracker_DF$`BFR Code` <= 301060003 ~ "Dermatology",
+  scritracker_DF$`BFR Code` >= 301060004 & scritracker_DF$`BFR Code` <= 301060004 ~ "Medicine",
+  scritracker_DF$`BFR Code` >= 301060005 & scritracker_DF$`BFR Code` <= 301060005 ~ "Obstetrics & Gynecology",
+  scritracker_DF$`BFR Code` >= 301060006 & scritracker_DF$`BFR Code` <= 301060006 ~ "Ophthalmology",
+  scritracker_DF$`BFR Code` >= 301060009 & scritracker_DF$`BFR Code` <= 301060009 ~ "Psychiatry",
+  scritracker_DF$`BFR Code` >= 301060010 & scritracker_DF$`BFR Code` <= 301060010 ~ "Radiation Oncology",
+  scritracker_DF$`BFR Code` >= 301060013 & scritracker_DF$`BFR Code` <= 301060013 ~ "Orthopaedics",
+  scritracker_DF$`BFR Code` >= 301060014 & scritracker_DF$`BFR Code` <= 301060014 ~ "Neurology",
+  scritracker_DF$`BFR Code` >= 301060016 & scritracker_DF$`BFR Code` <= 301060016 ~ "Neurosurgery",
+  scritracker_DF$`BFR Code` >= 6860207400 & scritracker_DF$`BFR Code` <= 6860207499 ~ "Emergency Medicine",
+  scritracker_DF$`BFR Code` >= 301060012 & scritracker_DF$`BFR Code` <= 301060012 ~ "Section of Surgical Disciplines",
+  scritracker_DF$`BFR Code` >= 301060008 & scritracker_DF$`BFR Code` <= 301060008 ~ "Pediatrics")
+
+scritracker_DF$"Days till SCRI Training Due" <- scritracker_DF$`Next Course Due` - Sys.Date()
+scritracker_DF <- scritracker_DF[order(scritracker_DF$`Last Name`),]
+scritracker_Brief <- scritracker_DF[,c(15,7,2,3,1,11,6,8,14,16,10,9)]
+
+colnames(scritracker_Brief) <- c('Unit','Unit Description','First Name','Last Name','Unique ID','Email','BFR Code','Training Course','SCRI Training Status',
+                                 'Days Until SCRI Training Due','Date Requirment Created','Next Training Due Date')
+
+SoMSoN_scritrackerdata <- scritracker_Brief[!(is.na(scritracker_Brief$Unit) | scritracker_Brief$Unit==""),] #removes any row without a label
+
+SoMSoN_scritrackerdata <- SoMSoN_scritrackerdata[order(SoMSoN_scritrackerdata$Unit),]
+
+currentdate <- Sys.Date()
+
+allrcrtracker <- paste("/Users/wlk3/Library/CloudStorage/Box-Box/RQMP Resources and Reports/SCRI Reports/SoM-SoN SCRI Tracker - Exported_",currentdate,".xlsx",sep="")
+
+write_xlsx(SoMSoN_scritrackerdata,path = allrcrtracker)
+```
