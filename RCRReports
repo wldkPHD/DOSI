@@ -1,0 +1,160 @@
+---
+title: "Tracker Checker"
+author: "William L. D. Krenzer, Ph.D."
+date: '2022-06-16'
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+```{r message=FALSE, warning=FALSE}
+#install.packages("writexl")
+#install.packages("dplyr")
+#install.packages("tibble")
+#install.packages("readr")
+#install.packages("DT")
+#install.packages("tidyverse")
+library("writexl")
+library("dplyr")
+library("tibble")
+library("readr")
+library("DT")
+library("tidyverse")
+library("readxl")
+
+rcrtracker_raw <- read.csv("members-where_required 2022-11-22.csv")
+
+rcrtracker_cleaned <- subset(rcrtracker_raw, select = -c(Display.Name,Job.Code,Job.Family.Code,Title,Required.On.1,Required.Note,Required.By,Required.By.Unique.ID,BFR8.Code,BFR8.Name,Org.Unit))
+
+rcrtracker_cleaned$Next.Course.Due.Date <- as.Date(rcrtracker_cleaned$Next.Course.Due.Date)
+rcrtracker_cleaned$X100.level.Due.Date <- as.Date(rcrtracker_cleaned$X100.level.Due.Date)
+rcrtracker_cleaned$X200.level.Due.Date <- as.Date(rcrtracker_cleaned$X200.level.Due.Date)
+
+rcrtracker_cleaned$"100-Level RCR Status" <- case_when(rcrtracker_cleaned$X100.level.Due.Date >= Sys.Date()+31 ~ "Compliant",
+                                             rcrtracker_cleaned$X100.level.Due.Date <= Sys.Date()+30 & 
+                                               rcrtracker_cleaned$X100.level.Due.Date >= Sys.Date()+8 ~ "Due in 8-30 days",
+                                             rcrtracker_cleaned$X100.level.Due.Date <= Sys.Date()+7 & 
+                                               rcrtracker_cleaned$X100.level.Due.Date >= Sys.Date() ~ "Due in 0-7 days",
+                                             rcrtracker_cleaned$X100.level.Due.Date >= Sys.Date()-14 & 
+                                               rcrtracker_cleaned$X100.level.Due.Date <= Sys.Date()-1 ~ "Overdue by 1-14 days",
+                                             rcrtracker_cleaned$X100.level.Due.Date >= Sys.Date()-29 & 
+                                               rcrtracker_cleaned$X100.level.Due.Date <= Sys.Date()-15 ~ "Overdue by 15-29 days",
+                                             rcrtracker_cleaned$X100.level.Due.Date <= Sys.Date()-30 ~ "Overdue by ≥ 30 days")
+
+rcrtracker_cleaned$"200-Level RCR Status" <- case_when(rcrtracker_cleaned$X200.level.Due.Date >= Sys.Date()+31 ~ "Compliant",
+                                             rcrtracker_cleaned$X200.level.Due.Date <= Sys.Date()+30 & 
+                                               rcrtracker_cleaned$X200.level.Due.Date >= Sys.Date()+8 ~ "Due in 8-30 days",
+                                             rcrtracker_cleaned$X200.level.Due.Date <= Sys.Date()+7 & 
+                                               rcrtracker_cleaned$X200.level.Due.Date >= Sys.Date() ~ "Due in 0-7 days",
+                                             rcrtracker_cleaned$X200.level.Due.Date >= Sys.Date()-14 & 
+                                               rcrtracker_cleaned$X200.level.Due.Date <= Sys.Date()-1 ~ "Overdue by 1-14 days",
+                                             rcrtracker_cleaned$X200.level.Due.Date >= Sys.Date()-29 & 
+                                               rcrtracker_cleaned$X200.level.Due.Date <= Sys.Date()-15 ~ "Overdue by 15-29 days",
+                                             rcrtracker_cleaned$X200.level.Due.Date <= Sys.Date()-30 ~ "Overdue by ≥ 30 days")
+
+rcrtracker_cleaned$"100-level days till due" <- rcrtracker_cleaned$X100.level.Due.Date - Sys.Date()
+rcrtracker_cleaned$"200-level days till due" <- rcrtracker_cleaned$X200.level.Due.Date - Sys.Date()
+
+rcrtracker_cleaned$"BFRLabel" <- case_when(  
+  rcrtracker_cleaned$BFR.Code >= 6860102000 & rcrtracker_cleaned$BFR.Code <= 6860102100 ~ "Biochemistry",
+  rcrtracker_cleaned$BFR.Code >= 6860205000 & rcrtracker_cleaned$BFR.Code <= 6860205100 ~ "Anesthesiology",
+  rcrtracker_cleaned$BFR.Code >= 6860107000 & rcrtracker_cleaned$BFR.Code <= 6860107100 ~ "Biostatistics & Bioinformatics",
+  rcrtracker_cleaned$BFR.Code >= 6860508000 & rcrtracker_cleaned$BFR.Code <= 6860508100 ~ "Brain Imaging and Analysis Center",
+  rcrtracker_cleaned$BFR.Code >= 6860101000 & rcrtracker_cleaned$BFR.Code <= 6860101100 ~ "Cell Biology",
+  rcrtracker_cleaned$BFR.Code >= 6860505500 & rcrtracker_cleaned$BFR.Code <= 6860505599 ~ "Marcus Center for Cellular Cures",
+  rcrtracker_cleaned$BFR.Code >= 6860501000 & rcrtracker_cleaned$BFR.Code <= 6860501099 ~ "Center for Study of Aging",
+  rcrtracker_cleaned$BFR.Code >= 6860501100 & rcrtracker_cleaned$BFR.Code <= 6860501199 ~ "Clinical & Translational Science Institute",
+  rcrtracker_cleaned$BFR.Code >= 6860201300 & rcrtracker_cleaned$BFR.Code <= 6860201399 ~ "Dermatology",
+  rcrtracker_cleaned$BFR.Code >= 6860503000 & rcrtracker_cleaned$BFR.Code <= 6860503100 ~ "Duke Cancer Institute",
+  rcrtracker_cleaned$BFR.Code >= 6860505000 & rcrtracker_cleaned$BFR.Code <= 6860505100 ~ "Duke Clinical Research Institute",
+  rcrtracker_cleaned$BFR.Code >= 6860010621 & rcrtracker_cleaned$BFR.Code <= 6860010625 ~ "Duke Early Phase Clinical Research Unit",
+  rcrtracker_cleaned$BFR.Code >= 6860508500 & rcrtracker_cleaned$BFR.Code <= 6860508599 ~ "Duke Global Health Institute",
+  rcrtracker_cleaned$BFR.Code >= 6860509500 & rcrtracker_cleaned$BFR.Code <= 6860509599 ~ "Duke Human Vaccine Institute",
+  rcrtracker_cleaned$BFR.Code >= 6860506500 & rcrtracker_cleaned$BFR.Code <= 6860506599 ~ "Duke Molecular Physiology Institute",
+  rcrtracker_cleaned$BFR.Code >= 6860201000 & rcrtracker_cleaned$BFR.Code <= 6860201100 ~ "Family Medicine & Community Health",
+  rcrtracker_cleaned$BFR.Code >= 6860504000 & rcrtracker_cleaned$BFR.Code <= 6860504099 ~ "Heart Center",
+  rcrtracker_cleaned$BFR.Code >= 6860102500 & rcrtracker_cleaned$BFR.Code <= 6860102599 ~ "Immunology",
+  rcrtracker_cleaned$BFR.Code >= 6860201500 & rcrtracker_cleaned$BFR.Code <= 6860201599 ~ "Medicine",
+  rcrtracker_cleaned$BFR.Code >= 6860105000 & rcrtracker_cleaned$BFR.Code <= 6860105099 ~ "Molecular Genetics and Microbiology",
+  rcrtracker_cleaned$BFR.Code >= 6860103500 & rcrtracker_cleaned$BFR.Code <= 6860103599 ~ "Neurobiology",
+  rcrtracker_cleaned$BFR.Code >= 6860206500 & rcrtracker_cleaned$BFR.Code <= 6860206599 ~ "Neurology",
+  rcrtracker_cleaned$BFR.Code >= 6860207700 & rcrtracker_cleaned$BFR.Code <= 6860207799 ~ "Neurosurgery",
+  rcrtracker_cleaned$BFR.Code >= 6860205500 & rcrtracker_cleaned$BFR.Code <= 6860205599 ~ "Obstetrics & Gynecology",
+  rcrtracker_cleaned$BFR.Code >= 6860206000 & rcrtracker_cleaned$BFR.Code <= 6860206099 ~ "Ophthalmology",
+  rcrtracker_cleaned$BFR.Code >= 6860207500 & rcrtracker_cleaned$BFR.Code <= 6860207599 ~ "Orthopaedics",
+  rcrtracker_cleaned$BFR.Code >= 6860204500 & rcrtracker_cleaned$BFR.Code <= 6860204599 ~ "Pathology",
+  rcrtracker_cleaned$BFR.Code >= 6860104500 & rcrtracker_cleaned$BFR.Code <= 6860104599 ~ "Pharmacology & Cancer Biology",
+  rcrtracker_cleaned$BFR.Code >= 6860202500 & rcrtracker_cleaned$BFR.Code <= 6860202599 ~ "Pediatrics",
+  rcrtracker_cleaned$BFR.Code >= 6860106500 & rcrtracker_cleaned$BFR.Code <= 6860106599 ~ "Population Health Sciences",
+  rcrtracker_cleaned$BFR.Code >= 6860203000 & rcrtracker_cleaned$BFR.Code <= 6860203099 ~ "Psychiatry",
+  rcrtracker_cleaned$BFR.Code >= 6860204000 & rcrtracker_cleaned$BFR.Code <= 6860204099 ~ "Radiation Oncology",
+  rcrtracker_cleaned$BFR.Code >= 6860203500 & rcrtracker_cleaned$BFR.Code <= 6860203599 ~ "Radiology",
+  rcrtracker_cleaned$BFR.Code >= 6840103000 & rcrtracker_cleaned$BFR.Code <= 6840103100 ~ "School of Nursing",
+  rcrtracker_cleaned$BFR.Code >= 6860207010 & rcrtracker_cleaned$BFR.Code <= 6860207099 ~ "Section of Surgical Disciplines",
+  rcrtracker_cleaned$BFR.Code >= 6860207900 & rcrtracker_cleaned$BFR.Code <= 6860207999 ~ "Head and Neck Surgery & Communication Sciences",
+  rcrtracker_cleaned$BFR.Code >= 6860010100 & rcrtracker_cleaned$BFR.Code <= 6860010620 ~ "SoM - No RQT Assigned",
+  rcrtracker_cleaned$BFR.Code >= 6860051000 & rcrtracker_cleaned$BFR.Code <= 6860051010 ~ "SoM - No RQT Assigned",
+  rcrtracker_cleaned$BFR.Code >= 6860501500 & rcrtracker_cleaned$BFR.Code <= 6860501510 ~ "SoM - No RQT Assigned",
+  rcrtracker_cleaned$BFR.Code >= 6860509600 & rcrtracker_cleaned$BFR.Code <= 6860509610 ~ "SoM - No RQT Assigned",
+  rcrtracker_cleaned$BFR.Code >= 6860600000 & rcrtracker_cleaned$BFR.Code <= 6860602000 ~ "SoM - No RQT Assigned",
+  rcrtracker_cleaned$BFR.Code >= 6860701000 & rcrtracker_cleaned$BFR.Code <= 6860701010 ~ "SoM - No RQT Assigned",
+  rcrtracker_cleaned$BFR.Code >= 6860010650 & rcrtracker_cleaned$BFR.Code <= 6860010655 ~ "SoM - No RQT Assigned",
+  rcrtracker_cleaned$BFR.Code >= 301060001 & rcrtracker_cleaned$BFR.Code <= 301060001 ~ "Anesthesiology",
+  rcrtracker_cleaned$BFR.Code >= 301060003 & rcrtracker_cleaned$BFR.Code <= 301060003 ~ "Dermatology",
+  rcrtracker_cleaned$BFR.Code >= 301060004 & rcrtracker_cleaned$BFR.Code <= 301060004 ~ "Medicine",
+  rcrtracker_cleaned$BFR.Code >= 301060005 & rcrtracker_cleaned$BFR.Code <= 301060005 ~ "Obstetrics & Gynecology",
+  rcrtracker_cleaned$BFR.Code >= 301060006 & rcrtracker_cleaned$BFR.Code <= 301060006 ~ "Ophthalmology",
+  rcrtracker_cleaned$BFR.Code >= 301060009 & rcrtracker_cleaned$BFR.Code <= 301060009 ~ "Psychiatry",
+  rcrtracker_cleaned$BFR.Code >= 301060010 & rcrtracker_cleaned$BFR.Code <= 301060010 ~ "Radiation Oncology",
+  rcrtracker_cleaned$BFR.Code >= 301060013 & rcrtracker_cleaned$BFR.Code <= 301060013 ~ "Orthopaedics",
+  rcrtracker_cleaned$BFR.Code >= 301060014 & rcrtracker_cleaned$BFR.Code <= 301060014 ~ "Neurology",
+  rcrtracker_cleaned$BFR.Code >= 301060016 & rcrtracker_cleaned$BFR.Code <= 301060016 ~ "Neurosurgery",
+  rcrtracker_cleaned$BFR.Code >= 6860207400 & rcrtracker_cleaned$BFR.Code <= 6860207499 ~ "Emergency Medicine",
+  rcrtracker_cleaned$BFR.Code >= 301060012 & rcrtracker_cleaned$BFR.Code <= 301060012 ~ "Section of Surgical Disciplines",
+  rcrtracker_cleaned$BFR.Code >= 301060008 & rcrtracker_cleaned$BFR.Code <= 301060008 ~ "Pediatrics")
+
+rcrtracker_cleaned$"Next RCR Course Due Status" <- case_when(rcrtracker_cleaned$Next.Course.Due.Date >= Sys.Date()+31 ~ "Compliant",
+                                             rcrtracker_cleaned$Next.Course.Due.Date <= Sys.Date()+30 & 
+                                               rcrtracker_cleaned$Next.Course.Due.Date >= Sys.Date()+8 ~ "Due in 8-30 days",
+                                             rcrtracker_cleaned$Next.Course.Due.Date <= Sys.Date()+7 & 
+                                               rcrtracker_cleaned$Next.Course.Due.Date >= Sys.Date() ~ "Due in 0-7 days",
+                                             rcrtracker_cleaned$Next.Course.Due.Date >= Sys.Date()-14 & 
+                                               rcrtracker_cleaned$Next.Course.Due.Date <= Sys.Date()-1 ~ "Overdue by 1-14 days",
+                                             rcrtracker_cleaned$Next.Course.Due.Date >= Sys.Date()-29 & 
+                                               rcrtracker_cleaned$Next.Course.Due.Date <= Sys.Date()-15 ~ "Overdue by 15-29 days",
+                                             rcrtracker_cleaned$Next.Course.Due.Date <= Sys.Date()-30 ~ "Overdue by ≥ 30 days")
+
+rcrtracker_cleaned <- rcrtracker_cleaned[order(rcrtracker_cleaned$Last.Name),]
+
+rcrtracker_brief <- rcrtracker_cleaned[,c(35,6,5,3,2,1,4,7,36,11,12,31,21,33,32,26,34)]
+
+rcrtracker_GEETA <- rcrtracker_cleaned[,c(35,6,5,3,2,1,4,7,36,11,12,31,21,33,32,26,34,13,14,15,16,17,18,19,20)]
+
+colnames(rcrtracker_brief) <- c('Unit','Unit Description','Unit Code','First Name','Last Name','Unique ID','NetID','Email','Next RCR Course Due Status','Next Course Due',
+                                'Next RCR Course Due Date','100-lvl RCR Status','100-lvl Due Date','100-lvl Days till due','200-lvl RCR Status','200-lvl Due Date',
+                                '200-lvl Days till due')
+
+colnames(rcrtracker_GEETA) <- c('Unit','Unit Description','Unit Code','First Name','Last Name','Unique ID','NetID','Email','Next RCR Course Due Status','Next Course Due',
+                                'Next RCR Course Due Date','100-lvl RCR Status','100-lvl Due Date','100-lvl Days till due','200-lvl RCR Status','200-lvl Due Date',
+                                '200-lvl Days till due','IACUC Source','Campus IRB Source','Health IRB Source','Post-doc Source','SAP Source','Space Source','SPS Source',
+                                'Manually Required Source')
+
+SoMSoN_trackerdata <- rcrtracker_brief[!(is.na(rcrtracker_brief$Unit) | rcrtracker_brief$Unit==""),] #removes any row without a label
+SoMSoN_GEETAdata <- rcrtracker_GEETA[!(is.na(rcrtracker_GEETA$Unit) | rcrtracker_GEETA$Unit==""),] #removes any row without a label
+
+SoMSoN_trackerdata <- SoMSoN_trackerdata[order(SoMSoN_trackerdata$Unit),]
+
+SoMSoN_rcrrepercussions_geeta <- filter(SoMSoN_GEETAdata, SoMSoN_GEETAdata$`Next RCR Course Due Date` <= Sys.Date()-21)
+
+SoMSoN_rcrrepercussions_geeta <- SoMSoN_rcrrepercussions_geeta[order(SoMSoN_rcrrepercussions_geeta$Unit),]
+
+currentdate <- Sys.Date()
+
+
+somsonrcrtracker <- paste("/Users/wlk3/Library/CloudStorage/Box-Box/RQMP Resources and Reports/RCR Reports/SoM-SoN RCR Tracker - Export_",currentdate,".xlsx",sep="")
+
+somsonrcrtrackergeeta <- paste("/Users/wlk3/Library/CloudStorage/Box-Box/DOSI_ASIST/RCR/Repercussions/Geeta Reports/SoM-SoN RCR Tracker - Repercussions for Geeta_",currentdate,".xlsx",sep="")
+
+write_xlsx(SoMSoN_trackerdata,path = somsonrcrtracker)
+write_xlsx(SoMSoN_rcrrepercussions_geeta,path = somsonrcrtrackergeeta)
+```
