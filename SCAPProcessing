@@ -7,7 +7,7 @@ output: html_document
 
 ```{r message=FALSE, warning=FALSE}
 ### These are to set the working directory and libraries needed for analysis.###
-#setwd("/Users/Wlk3/Desktop/SCAP_Workspace")
+#setwd("/Users/[netid]/Desktop/[designated workspace]")
 library("dplyr")
 
 ### Read the raw CSV file that is placed in the Working Directory.###
